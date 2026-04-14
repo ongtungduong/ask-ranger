@@ -353,15 +353,19 @@ install_mempalace() {
 
     if command -v mempalace &>/dev/null; then
         mempalace init "$PROJECT_DIR" 2>/dev/null || ok "MemPalace already initialized"
-        info "Registering MemPalace MCP server..."
-        local MEMPALACE_PYTHON
-        MEMPALACE_PYTHON="$(pipx environment --value PIPX_LOCAL_VENVS 2>/dev/null)/mempalace/bin/python"
-        if [ -x "$MEMPALACE_PYTHON" ]; then
-            claude mcp add mempalace -- "$MEMPALACE_PYTHON" -m mempalace.mcp_server 2>/dev/null \
-                || warn "Could not auto-register MCP server — run manually: claude mcp add mempalace -- python -m mempalace.mcp_server"
+        if claude mcp list 2>/dev/null | grep -q '^mempalace:'; then
+            ok "MemPalace MCP server already registered"
         else
-            claude mcp add mempalace -- python -m mempalace.mcp_server 2>/dev/null \
-                || warn "Could not auto-register MCP server — run manually: claude mcp add mempalace -- python -m mempalace.mcp_server"
+            info "Registering MemPalace MCP server..."
+            local MEMPALACE_PYTHON
+            MEMPALACE_PYTHON="$(pipx environment --value PIPX_LOCAL_VENVS 2>/dev/null)/mempalace/bin/python"
+            if [ -x "$MEMPALACE_PYTHON" ]; then
+                claude mcp add mempalace -- "$MEMPALACE_PYTHON" -m mempalace.mcp_server 2>/dev/null \
+                    || warn "Could not auto-register MCP server — run manually: claude mcp add mempalace -- python -m mempalace.mcp_server"
+            else
+                claude mcp add mempalace -- python -m mempalace.mcp_server 2>/dev/null \
+                    || warn "Could not auto-register MCP server — run manually: claude mcp add mempalace -- python -m mempalace.mcp_server"
+            fi
         fi
         ok "MemPalace configured"
     else
