@@ -1,15 +1,13 @@
 {
   "people": [],
   "projects": [
-    "Document",
-    "Quick",
+    "Archive",
+    "Continue",
     "Superpowers",
-    "Epics",
-    "Implementation",
-    "Validate",
-    "One",
-    "Workflow",
-    "Create",
-    "Project"
+    "Sync",
+    "Auto",
+    "Graphify",
+    "Schema",
+    "Claude"
   ]
 }
