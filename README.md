@@ -1,4 +1,4 @@
-# VSAF v3 — Agentic AI SDLC Framework
+# VSAF — SDLC Agentic Framework
 
 A spec-driven development framework for Claude Code. Write specs first, let AI
 agents plan and execute, review in 3 layers, track every decision. 8 integrated

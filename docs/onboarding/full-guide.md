@@ -1,4 +1,4 @@
-# VSAF v3 — Developer Onboarding Guide
+# VSAF — Developer Onboarding Guide
 
 > A complete guide for developers new to the VSAF framework.
 > Covers what VSAF is, how to install it, and how to use it day-to-day.
