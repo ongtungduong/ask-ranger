@@ -1,153 +1,64 @@
 # ASF — Agentic SDLC Framework
 
 > System prompt for Claude Code. Do not remove or override.
-> Spec-driven development. 3-layer review. 8 integrated tools.
+> Spec-driven development. 3-layer review. 5-tool stack.
 
 ---
 
 ## Identity
 
-This project uses the **ASF (Agentic SDLC Framework)**. All development
-follows the 10-step workflow below. No code ships without spec compliance and
-3-layer review.
+This project uses the **ASF (Agentic SDLC Framework)**.
 
----
+**Stack:**
 
-## Memory Management
-
-### claude-mem (auto-pilot)
-- claude-mem handles session continuity automatically. **Do not duplicate** its work.
-- Session context is auto-injected on start. No manual action needed.
-- Web viewer: http://localhost:37777
-
-### MemPalace (knowledge base)
-- Call `mempalace_search` **BEFORE** answering about past decisions, architecture
-  rationale, or "why did we choose X" questions.
-- Use `mempalace_add_drawer` for important decisions worth preserving verbatim.
-- Write `mempalace_diary_write` at end of meaningful sessions.
-- Run `mempalace mine ~/chats/ --mode convos` weekly to capture decision history.
-
-### Separation of Concerns
-| claude-mem | MemPalace |
+| Layer | Tool |
 |---|---|
-| Session recall, debug history | Architecture decisions, team knowledge |
-| Auto-compressed summaries | Verbatim lossless storage |
-| "What file did I change yesterday?" | "Why did we choose Patroni over Stolon?" |
-| Lossy — may lose reasoning chain | Temporal KG with stale fact invalidation |
+| Spec | OpenSpec |
+| Code intelligence | GitNexus (MCP) |
+| Implementation | Claude Code + Superpowers + AgentShield |
 
-**Anti-pattern:** Do not use MemPalace for session recall. Do not use claude-mem
-for architecture decisions. Do not dump knowledge into CLAUDE.md.
+**Supported platforms:** Claude Code (primary) | GitHub Copilot | Antigravity
 
 ---
 
-## Knowledge Graph
+## 5-Step Workflow
 
-### GitNexus (MCP backbone)
-- Use GitNexus MCP tools for impact analysis before any code change.
-- Query: "What breaks if I change X?" before touching cross-module code.
-- Re-index after every merge: `gitnexus analyze`
-
-### Graphify (multimodal KG)
-- Read `graphify-out/GRAPH_REPORT.md` **before** answering architecture questions.
-- Use `/graphify query "question"` for structural queries.
-- Use `/graphify path ServiceA ServiceB` to trace dependency paths.
-- Re-build after merge: `/graphify . --update`
-
-### Mandatory Re-indexing
-After every merge or significant change:
-```
-gitnexus analyze && /graphify . --update
-```
-Or: `make index`
-
----
-
-## 10-Step Workflow
-
-### Step 0: Setup (one-time)
+### Step 1: Spec
 ```bash
-make setup   # runs scripts/setup-asf.sh
-```
-
-### Step 1: Understand Codebase
-- Read `graphify-out/GRAPH_REPORT.md` first.
-- Run `gitnexus serve` for web UI exploration.
-- Query MemPalace for past team decisions.
-- Do not modify code on day one.
-
-### Step 2: Scope
-```
-*agent analyst          # BMAD: clarify scope
-*workflow-init          # Quick/Standard/Enterprise
-bmad-help               # What's next?
-```
-Quick Flow (bug fix) --> skip to Step 6.
-
-### Step 3: Planning (skip for Quick Flow)
-```
-*agent pm               # PRD: FRs, NFRs, Epics
-*agent architect         # Architecture doc
-*agent po               # Sprint stories
-git add docs/ && git commit -m "feat: PRD + arch for <feature>"
-```
-
-### Step 4: Specs (skip for Quick Flow)
-```
 /opsx:propose <feature>
-/opsx:ff                # Fast-forward all docs
-git add openspec/ && git commit -m "spec: <feature>"
+git commit -m "spec: <feature>"
 ```
 Tasks must be atomic (2-5 min). Include edge cases.
 
-### Step 5: Impact Analysis
+### Step 2: Impact Analysis
 ```
-"What breaks if I change PaymentService?"    # GitNexus MCP
-/graphify path PaymentService NotificationService
-mempalace search "PaymentService refactor"   # Past attempts
+gitnexus_impact({target: "symbol", direction: "upstream"})
+gitnexus_context({name: "symbol"})
 ```
-Impact > 3 modules --> split PRs. Update specs if new edge cases found.
+Impact > 3 modules → split PRs. Update specs if new edge cases found.
 
-### Step 6: Brainstorm + Plan
+### Step 3: Brainstorm + Plan
 ```
-/superpowers:brainstorm       # Socratic Q&A, explore alternatives
-/superpowers:write-plan       # Bite-sized tasks + verification steps
+/superpowers:brainstorm
+/superpowers:write-plan
 ```
 Do not approve until every task has a verification step.
 
-### Step 7: Execute
+### Step 4: Execute
 ```
-/superpowers:execute-plan     # RED -> GREEN -> REFACTOR per task
+/superpowers:execute-plan
 ```
 - 1 commit per task.
 - Tests after EVERY task.
-- Fail 3x on same task --> stop, do architectural review.
-- ECC hooks fire passively (block secrets, protect config).
+- Fail 3x on same task → stop, architectural review.
 
-### Step 8: Self-Review (3-layer -- MANDATORY)
+### Step 5: Review + Ship
 ```bash
-# Layer 1: Methodology compliance
 /superpowers:code-review
-
-# Layer 2: Spec compliance
-/opsx:verify               # or: make verify
-
-# Layer 3: Knowledge graph sync
-make index                  # gitnexus analyze + graphify update
-```
-If Layer 2 fails --> return to Step 7.
-After config changes: `npx ecc-agentshield scan` (or: `make scan`).
-
-### Step 9: Push PR
-```bash
+/opsx:verify
+npx ecc-agentshield scan
 git push origin feature/<name>
-```
-PR description must include: OpenSpec proposal link, impact summary, test results.
-
-### Step 10: Archive + Ship
-```bash
-make archive                # openspec archive + re-index
-mempalace mine ~/chats/ --mode convos   # Mine decisions
-git tag v<version> && git push --tags
+/opsx:archive
 ```
 
 ---
@@ -156,29 +67,17 @@ git tag v<version> && git push --tags
 
 | Action | Command |
 |---|---|
-| BMAD analyst | `*agent analyst` |
-| BMAD PRD | `*agent pm` |
-| BMAD architect | `*agent architect` |
-| BMAD next step | `bmad-help` |
 | OpenSpec propose | `/opsx:propose <feature>` |
-| OpenSpec fast-forward | `/opsx:ff` |
 | OpenSpec verify | `/opsx:verify` |
 | OpenSpec archive | `/opsx:archive` |
 | Superpowers brainstorm | `/superpowers:brainstorm` |
 | Superpowers plan | `/superpowers:write-plan` |
 | Superpowers execute | `/superpowers:execute-plan` |
 | Superpowers review | `/superpowers:code-review` |
-| ECC scan | `npx ecc-agentshield scan` |
-| ECC deep scan | `npx ecc-agentshield scan --opus --stream` |
+| AgentShield scan | `npx ecc-agentshield scan` |
+| AgentShield deep scan | `npx ecc-agentshield scan --opus --stream` |
 | GitNexus index | `gitnexus analyze` |
 | GitNexus web | `gitnexus serve` |
-| Graphify build | `/graphify .` |
-| Graphify query | `/graphify query "question"` |
-| Graphify update | `/graphify . --update` |
-| MemPalace search | `mempalace search "query"` |
-| MemPalace mine | `mempalace mine ~/chats/ --mode convos` |
-| MemPalace status | `mempalace status` |
-| claude-mem viewer | `http://localhost:37777` |
 
 ---
 
@@ -186,18 +85,13 @@ git tag v<version> && git push --tags
 
 | Do Not | Instead |
 |---|---|
-| Write code before specs | Spec first, code second: `/opsx:propose` |
+| Write code before specs | `/opsx:propose` first |
 | Skip brainstorm | `/superpowers:brainstorm` before planning |
-| Push without review | 3-layer: Superpowers + OpenSpec verify + re-index |
-| Forget to re-index | `make index` after every merge |
+| Push without review | code-review + opsx:verify + agentshield scan |
 | Create PRs > 400 lines | Split into smaller PRs |
-| Trust AI output blindly | AI writes -> Superpowers reviews -> human approves |
-| Skip impact analysis | GitNexus + Graphify + MemPalace BEFORE coding |
-| Dump knowledge into CLAUDE.md | CLAUDE.md = rules. claude-mem = sessions. MemPalace = decisions |
-| Install full ECC plugin | Cherry-pick only: AgentShield + hooks + language skills |
-| Use MemPalace for session recall | claude-mem auto-handles session continuity |
-| Use claude-mem for architecture decisions | MemPalace verbatim + temporal KG for decisions |
-| Skip MemPalace mining | `mempalace mine` weekly for architecture decisions |
+| Trust AI output blindly | AI writes → Superpowers reviews → human approves |
+| Skip impact analysis | GitNexus BEFORE coding |
+| Forget to archive | `/opsx:archive` after every merge |
 
 ---
 
@@ -212,9 +106,9 @@ git tag v<version> && git push --tags
 
 ## Security
 
-- ECC hooks are active: secrets and protected files are blocked automatically.
+- AgentShield hooks active: secrets and protected files are blocked automatically.
 - Run `npx ecc-agentshield scan` after any configuration change.
-- Run `make scan-deep` before releases.
+- Run `npx ecc-agentshield scan --opus --stream` before releases.
 - Never hardcode credentials. Use environment variables.
 - Review `.claude/settings.json` hook rules if a block triggers unexpectedly.
 
