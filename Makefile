@@ -2,7 +2,7 @@
 # Day-to-day operations via Make targets.
 # Run `make help` for available commands.
 
-.PHONY: help setup update update-prompts index scan scan-deep check-artifacts review review-checklist archive status clean
+.PHONY: help setup sync update update-prompts index scan scan-deep check-artifacts review review-checklist archive status clean
 
 SHELL := /bin/bash
 
@@ -12,8 +12,11 @@ help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
-setup: ## Setup ask-ranger. Current dir by default, or: make setup TARGET=/path/to/repo
+setup: sync ## Setup ask-ranger. Current dir by default, or: make setup TARGET=/path/to/repo
 	@bash scripts/setup.sh "$(TARGET)"
+
+sync: ## Regenerate platform-specific workflow files from canonical workflows/
+	@bash scripts/sync-platforms.sh
 
 update-prompts: ## Pull latest CLAUDE.md + AGENTS.md only (Makefile/hooks/skills NOT updated)
 	@bash scripts/setup.sh "$(TARGET)"

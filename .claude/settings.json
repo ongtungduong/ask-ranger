@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "INPUT=\"$TOOL_INPUT\"; if [ -n \"$INPUT\" ]; then if echo \"$INPUT\" | grep -qE 'AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|ghp_[a-zA-Z0-9]{36}|sk-[a-zA-Z0-9]{48}|xox[bpoas]-[a-zA-Z0-9-]+|eyJ[a-zA-Z0-9_-]*\\.[a-zA-Z0-9_-]*\\.[a-zA-Z0-9_-]*'; then echo 'BLOCK: Hardcoded secret/token detected. Use environment variables.'; exit 2; fi; fi"
+            "command": "bash scripts/hooks/gitleaks-precheck.sh"
           }
         ]
       }

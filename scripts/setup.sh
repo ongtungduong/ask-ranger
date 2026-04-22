@@ -58,7 +58,21 @@ if ! command -v jq &>/dev/null; then
         *)      fail "Install jq manually" ;;
     esac
 fi
-ok "node $(node -v | sed 's/v//'), npm $(npm -v), git, jq"
+
+# gitleaks for secret scanning (optional but strongly recommended)
+if ! command -v gitleaks &>/dev/null; then
+    info "gitleaks missing — installing..."
+    case "$(uname -s)" in
+        Darwin) brew install gitleaks >/dev/null 2>&1 \
+            || warn "gitleaks install failed — install manually: brew install gitleaks" ;;
+        Linux)  sudo apt install -y gitleaks >/dev/null 2>&1 \
+            || warn "gitleaks install failed via apt — install from https://github.com/gitleaks/gitleaks/releases" ;;
+        *)      warn "Install gitleaks manually from https://github.com/gitleaks/gitleaks/releases" ;;
+    esac
+fi
+GITLEAKS_VER="$(gitleaks version 2>/dev/null | head -1 || echo not-installed)"
+
+ok "node $(node -v | sed 's/v//'), npm $(npm -v), git, jq, gitleaks($GITLEAKS_VER)"
 
 # ---------------------------------------------------------------------------
 # 2. Global tools (OpenSpec, GitNexus)
@@ -134,7 +148,7 @@ if [ "$TARGET" != "$ASK_DIR" ]; then
     done
 
     # Skip if exists — preserve target's customizations
-    for p in Makefile githooks scripts .claude .github .agent docs; do
+    for p in Makefile githooks scripts workflows .claude .github .agent docs; do
         if [ -e "$TARGET/$p" ]; then
             skip "$p already exists"
         elif [ -e "$ASK_DIR/$p" ]; then

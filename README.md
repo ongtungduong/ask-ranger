@@ -24,7 +24,7 @@ See [GETTING_STARTED.md](GETTING_STARTED.md) for a step-by-step walkthrough.
 
 ## Setup
 
-Requires **Node.js ≥ 18**, **Git**, and **jq**.
+Requires **Node.js ≥ 18**, **Git**, **jq**, and **gitleaks** (auto-installed on macOS/Linux; see [gitleaks releases](https://github.com/gitleaks/gitleaks/releases) for other platforms).
 
 ```bash
 git clone <this-repo> ask-ranger
@@ -76,10 +76,11 @@ This overwrites `CLAUDE.md` and `AGENTS.md`. Other files (Makefile, hooks, etc.)
 
 | Command | What It Does |
 |---|---|
-| `make update` | Pull latest CLAUDE.md + AGENTS.md from ask-ranger |
+| `make update-prompts` | Pull latest CLAUDE.md + AGENTS.md from ask-ranger (alias: `make update`) |
+| `make sync` | Regenerate platform-specific workflow files from canonical `workflows/` |
 | `make index` | Re-index codebase (GitNexus) — run after every merge |
 | `make check-artifacts` | Check OpenSpec artifact completeness |
-| `make review` | Run full 3-layer review |
+| `make review-checklist` | Run 3-layer review checklist (alias: `make review`) |
 | `make scan` | Run AgentShield security scan |
 | `make status` | Show status of all installed tools |
 
@@ -101,17 +102,26 @@ This overwrites `CLAUDE.md` and `AGENTS.md`. Other files (Makefile, hooks, etc.)
 
 ```
 .
-├── .agent/                  # Antigravity skills and workflows
+├── workflows/               # Canonical source-of-truth for opsx workflows
+├── .agent/                  # Generated Antigravity skills and workflows
 ├── .claude/
-│   └── settings.json        # AgentShield hooks
-├── .github/                 # GitHub Copilot instructions and prompts
+│   ├── commands/opsx/       # Generated Claude Code slash commands
+│   ├── skills/              # Generated Claude Code skills
+│   └── settings.json        # AgentShield hooks (uses gitleaks)
+├── .github/                 # Generated Copilot skills + instructions
 ├── docs/
 │   └── superpowers/         # Implementation plans and specs
 ├── githooks/                # Git hooks (pre-push security scan)
 ├── openspec/                # OpenSpec workspace (changes, specs)
 ├── scripts/
-│   └── setup.sh             # Unified setup script
+│   ├── setup.sh             # Unified setup script
+│   ├── sync-platforms.sh    # Regenerate platform-specific files
+│   ├── session-end-check.sh # Session-stop gitleaks scan
+│   └── hooks/               # Claude Code PreToolUse hooks
 ├── CLAUDE.md                # AI system prompt — workflow rules
 ├── GETTING_STARTED.md       # Step-by-step first-feature guide
+├── LICENSE                  # MIT
 └── Makefile                 # All day-to-day operations
 ```
+
+> Files in `.claude/commands/opsx/`, `.claude/skills/openspec-*`, `.agent/skills/openspec-*`, `.agent/workflows/opsx-*`, `.github/skills/openspec-*`, and `.github/prompts/opsx-*` are **generated** from `workflows/`. Edit the canonical source there, then run `make sync`.
