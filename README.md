@@ -19,53 +19,41 @@ in 3 layers. 5-tool stack, $20/month total.
 
 **Supported platforms:** Claude Code (primary) | GitHub Copilot | Antigravity
 
-## Quickstart
+## Setup
 
 Requires **Node.js ≥ 18**, **Git**, **jq**, and a **Claude Code subscription** ($20/mo).
 
-```bash
-git clone <this-repo> && cd agentic-sdlc-framework
-make setup          # Install tools (idempotent — safe to re-run)
-make status         # Verify everything is working
-```
-
-One manual post-setup step (requires an interactive Claude Code session):
-
-```
-/plugin install superpowers@claude-plugins-official
-```
-
-Restart Claude Code after installing Superpowers.
-
-## Onboarding an Existing Repo
-
-To apply ASF to a repo you already have, clone ASF and run one command:
+One script handles both new repos and existing repos with code. It is idempotent — safe to re-run.
 
 ```bash
 git clone <this-repo> agentic-sdlc-framework
-make -C agentic-sdlc-framework onboard TARGET=/path/to/your-repo
+
+# Option A — apply to an existing repo
+make -C agentic-sdlc-framework setup TARGET=/path/to/your-repo
+
+# Option B — use ASF itself as your working repo
+cd agentic-sdlc-framework && make setup
 ```
 
-The script copies these files into your repo:
+What the script does in the target repo:
 
 | File / Directory | Behavior |
 |---|---|
-| `CLAUDE.md` | Always overwritten (ASF system prompt) |
-| `AGENTS.md` | Always overwritten (ASF agent rules) |
-| `Makefile` | Copied only if not present |
-| `githooks/` | Copied only if not present |
-| `.claude/` | Copied only if not present |
-| `.github/` | Copied only if not present |
-| `.agent/` | Copied only if not present |
-| `.gitignore` | ASF entries appended (idempotent — safe to re-run) |
+| `CLAUDE.md`, `AGENTS.md` | Always overwritten (ASF system prompts) |
+| `Makefile`, `githooks/`, `.claude/`, `.github/`, `.agent/`, `docs/` | Copied only if not present |
+| `.gitignore` | ASF entries appended once (marker-based) |
+| `core.hooksPath` | Set to `githooks/` |
+| OpenSpec | `openspec init` in target |
+| GitNexus | `gitnexus analyze` to build code index |
+| AgentShield | Hooks merged into `~/.claude/settings.json` |
 
-After the script finishes, complete one manual step inside Claude Code:
+One manual step inside Claude Code:
 
 ```
 /plugin install superpowers@claude-plugins-official
 ```
 
-Restart Claude Code after installing Superpowers.
+Restart Claude Code after installing Superpowers. Then run `make status` to verify.
 
 ## Directory Layout
 
@@ -80,7 +68,7 @@ Restart Claude Code after installing Superpowers.
 ├── githooks/                # Git hooks (pre-push security scan)
 ├── openspec/                # OpenSpec workspace (proposals, tasks, verification)
 ├── scripts/
-│   └── setup-asf.sh         # Setup automation (called by make setup)
+│   └── setup.sh             # Unified setup (called by make setup)
 ├── CLAUDE.md                # Claude Code system prompt — workflow rules
 └── Makefile                 # All day-to-day operations
 ```
@@ -89,7 +77,7 @@ Restart Claude Code after installing Superpowers.
 
 | Command | What It Does |
 |---|---|
-| `make setup` | Install or update all tools |
+| `make setup [TARGET=...]` | Install/update ASF in current dir or target repo |
 | `make index` | Re-index codebase (GitNexus) — run after every merge |
 | `make verify` | Check implementation against OpenSpec specs |
 | `make review` | Run 3-layer review |
