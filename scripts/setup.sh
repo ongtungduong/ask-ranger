@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# setup.sh — Install ASF into a target git repository (new or with existing code).
+# setup.sh — Install asf-devflow into a target git repository (new or with existing code).
 # Usage: bash scripts/setup.sh [TARGET_DIR]
 #   TARGET_DIR: optional path to target repo. Defaults to current directory.
 set -euo pipefail
@@ -23,11 +23,11 @@ if ! git -C "$TARGET" rev-parse --git-dir &>/dev/null 2>&1; then
     fail "Not a git repository: $TARGET — run 'git init' first"
 fi
 TARGET="$(cd "$TARGET" && pwd)"
-ASF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DEVFLOW_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo ""
 echo "============================================================"
-echo "  ASF — Setup"
+echo "  asf-devflow — Setup"
 echo "  Target: $TARGET"
 echo "============================================================"
 
@@ -98,15 +98,15 @@ fi
 rm -rf "$ECC_DIR"
 
 # ---------------------------------------------------------------------------
-# 4. Copy ASF config to TARGET (skip if TARGET == ASF_DIR)
+# 4. Copy asf-devflow config to TARGET (skip if TARGET == DEVFLOW_DIR)
 # ---------------------------------------------------------------------------
-if [ "$TARGET" != "$ASF_DIR" ]; then
-    step "Copying ASF config to target"
+if [ "$TARGET" != "$DEVFLOW_DIR" ]; then
+    step "Copying asf-devflow config to target"
 
-    # Always overwrite — system prompts must match ASF version
+    # Always overwrite — system prompts must match asf-devflow version
     for f in CLAUDE.md AGENTS.md; do
-        if [ -f "$ASF_DIR/$f" ]; then
-            cp "$ASF_DIR/$f" "$TARGET/$f"
+        if [ -f "$DEVFLOW_DIR/$f" ]; then
+            cp "$DEVFLOW_DIR/$f" "$TARGET/$f"
             ok "$f updated"
         fi
     done
@@ -115,26 +115,26 @@ if [ "$TARGET" != "$ASF_DIR" ]; then
     for p in Makefile githooks .claude .github .agent docs; do
         if [ -e "$TARGET/$p" ]; then
             skip "$p already exists"
-        elif [ -e "$ASF_DIR/$p" ]; then
-            rsync -a "$ASF_DIR/$p" "$TARGET/"
+        elif [ -e "$DEVFLOW_DIR/$p" ]; then
+            rsync -a "$DEVFLOW_DIR/$p" "$TARGET/"
             ok "$p copied"
         fi
     done
 
     # Merge .gitignore with marker
-    MARKER="# ASF entries"
+    MARKER="# asf-devflow entries"
     if grep -qF "$MARKER" "$TARGET/.gitignore" 2>/dev/null; then
-        skip ".gitignore already has ASF entries"
-    elif [ -f "$ASF_DIR/.gitignore" ]; then
+        skip ".gitignore already has asf-devflow entries"
+    elif [ -f "$DEVFLOW_DIR/.gitignore" ]; then
         {
             [ -f "$TARGET/.gitignore" ] && echo ""
             echo "$MARKER"
-            cat "$ASF_DIR/.gitignore"
+            cat "$DEVFLOW_DIR/.gitignore"
         } >> "$TARGET/.gitignore"
         ok ".gitignore updated"
     fi
 else
-    info "TARGET is ASF itself — skipping config copy"
+    info "TARGET is asf-devflow itself — skipping config copy"
 fi
 
 # ---------------------------------------------------------------------------

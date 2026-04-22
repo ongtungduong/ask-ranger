@@ -1,4 +1,4 @@
-# ASF — Agentic SDLC Framework
+# asf-devflow — ASF lite edition for solo developers
 # Day-to-day operations via Make targets.
 # Run `make help` for available commands.
 
@@ -12,10 +12,10 @@ help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
-setup: ## Setup ASF. Current dir by default, or: make setup TARGET=/path/to/repo
+setup: ## Setup asf-devflow. Current dir by default, or: make setup TARGET=/path/to/repo
 	@bash scripts/setup.sh "$(TARGET)"
 
-update: ## Pull latest CLAUDE.md + AGENTS.md from ASF (safe to re-run)
+update: ## Pull latest CLAUDE.md + AGENTS.md from asf-devflow (safe to re-run)
 	@bash scripts/setup.sh "$(TARGET)"
 	@echo ""
 	@echo "Note: Makefile, githooks, .claude, .github, .agent, docs are skipped if already"

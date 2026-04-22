@@ -1,6 +1,7 @@
-# ASF — Agentic SDLC Framework
+# asf-devflow
 
 > System prompt for Claude Code. Do not remove or override.
+> Part of the ASF (Agentic SDLC Framework) family — lite edition for solo developers.
 
 **Stack:** OpenSpec · GitNexus (MCP) · Claude Code + Superpowers + AgentShield  
 **Platforms:** Claude Code (primary) | GitHub Copilot | Antigravity

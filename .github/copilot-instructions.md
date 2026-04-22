@@ -1,6 +1,6 @@
-# ASF — GitHub Copilot Instructions
+# asf-devflow — GitHub Copilot Instructions
 
-This project uses the **ASF (Agentic SDLC Framework)** — a 5-tool spec-driven workflow.
+This project uses **asf-devflow** — the lite edition of the ASF (Agentic SDLC Framework), a 5-tool spec-driven workflow for solo developers.
 
 **Stack:** OpenSpec | GitNexus (MCP) | Claude Code + Superpowers + AgentShield
 
