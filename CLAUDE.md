@@ -26,21 +26,21 @@ Impact > 3 modules → split PRs. Update specs if new edge cases found.
 
 **Step 3 — Brainstorm + Plan**
 ```
-/superpowers:brainstorm
-/superpowers:write-plan
+/superpowers:brainstorming
+/superpowers:writing-plans
 ```
 Do not approve until every task has a verification step.
 
 **Step 4 — Execute**
 ```
-/superpowers:execute-plan
+/superpowers:executing-plans
 ```
 1 commit per task. Tests after EVERY task. Fail 3× → stop, architectural review.
 
 **Step 5 — Review + Ship**
 ```
-/superpowers:code-review
-/opsx:verify
+/superpowers:requesting-code-review
+make check-artifacts
 npx ecc-agentshield scan
 git push origin feature/<name>
 /opsx:archive
@@ -53,8 +53,8 @@ git push origin feature/<name>
 | Do Not | Instead |
 |---|---|
 | Write code before specs | `/opsx:propose` first |
-| Skip brainstorm | `/superpowers:brainstorm` before planning |
-| Push without review | code-review + opsx:verify + agentshield scan |
+| Skip brainstorm | `/superpowers:brainstorming` before planning |
+| Push without review | code-review + make check-artifacts + agentshield scan |
 | Create PRs > 400 lines | Split into smaller PRs |
 | Trust AI output blindly | AI writes → Superpowers reviews → human approves |
 | Skip impact analysis | GitNexus BEFORE coding |
@@ -78,7 +78,7 @@ git push origin feature/<name>
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **ask-ranger** (12 symbols, 4 relationships, 0 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus. Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

@@ -55,13 +55,13 @@ The AI reports which modules are affected. You decide:
 ### Step 3 — Brainstorm + Plan
 
 ```
-/superpowers:brainstorm
+/superpowers:brainstorming
 ```
 
 The AI proposes 2–3 approaches with trade-offs. You choose one.
 
 ```
-/superpowers:write-plan
+/superpowers:writing-plans
 ```
 
 The AI creates a detailed implementation plan. Review it — every task must have a verification step before you approve.
@@ -71,7 +71,7 @@ The AI creates a detailed implementation plan. Review it — every task must hav
 ### Step 4 — Execute
 
 ```
-/superpowers:execute-plan
+/superpowers:executing-plans
 ```
 
 The AI implements each task using TDD (tests first, then code), commits after each task, and reports when done. If a task fails 3 times, the AI stops and asks for direction.
@@ -81,7 +81,7 @@ The AI implements each task using TDD (tests first, then code), commits after ea
 ### Step 5 — Review + Ship
 
 ```
-/superpowers:code-review
+/superpowers:requesting-code-review
 ```
 AI reviews its own output against the methodology.
 
@@ -106,7 +106,7 @@ The `/opsx:*` and `/superpowers:*` commands work across all supported AI tools:
 | Command group | Claude Code | Antigravity | GitHub Copilot |
 |---|---|---|---|
 | `/opsx:propose` `/opsx:apply` `/opsx:archive` | Yes | Yes | Yes (via agent) |
-| `/superpowers:brainstorm` `/superpowers:write-plan` `/superpowers:execute-plan` | Yes (plugin) | Yes | Yes (via agent) |
+| `/superpowers:brainstorming` `/superpowers:writing-plans` `/superpowers:executing-plans` | Yes (plugin) | Yes | Yes (via agent) |
 | GitNexus MCP tools | Yes | Yes | Partial |
 
 For Claude Code: install Superpowers with `/plugin install superpowers@claude-plugins-official`.
@@ -135,6 +135,6 @@ For GitHub Copilot: agent instructions are in `.github/copilot-instructions.md` 
 | Do not | Instead |
 |---|---|
 | Start coding without a spec | `/opsx:propose` first |
-| Skip brainstorm | `/superpowers:brainstorm` before planning |
+| Skip brainstorm | `/superpowers:brainstorming` before planning |
 | Push without review | `make review` + `make scan` before every PR |
 | Forget to archive | `/opsx:archive` after every merge |

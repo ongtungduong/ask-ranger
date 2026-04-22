@@ -25,6 +25,16 @@ fi
 TARGET="$(cd "$TARGET" && pwd)"
 ASK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# Platform support check (S5)
+case "$(uname -s)" in
+    Darwin|Linux) ;;
+    MINGW*|MSYS*|CYGWIN*)
+        warn "Windows detected — ask-ranger is tested on macOS and Linux only."
+        warn "Use WSL2 for full compatibility. Continuing anyway, but some steps may fail." ;;
+    *)
+        warn "Unknown platform $(uname -s) — proceeding at your own risk." ;;
+esac
+
 echo ""
 echo "============================================================"
 echo "  ask-ranger — Setup"
@@ -74,10 +84,18 @@ mkdir -p "$HOME/.claude"
 SETTINGS="$HOME/.claude/settings.json"
 [ ! -f "$SETTINGS" ] && echo '{}' > "$SETTINGS"
 
+# Backup before mutating (S6)
+BACKUP="$SETTINGS.bak.$(date +%Y%m%d%H%M%S)"
+cp "$SETTINGS" "$BACKUP"
+info "Backed up existing settings to $BACKUP"
+
 ECC_DIR=$(mktemp -d)
-trap 'rm -rf "$ECC_DIR"' EXIT
-if git clone --depth 1 https://github.com/affaan-m/everything-claude-code.git "$ECC_DIR" 2>/dev/null \
+ECC_LOG=$(mktemp)
+trap 'rm -rf "$ECC_DIR" "$ECC_LOG"' EXIT
+
+if git clone --depth 1 https://github.com/affaan-m/everything-claude-code.git "$ECC_DIR" 2>"$ECC_LOG" \
    && [ -f "$ECC_DIR/hooks/hooks.json" ]; then
+    MERGE_ERR=$(mktemp)
     MERGED=$(jq -s '
         .[0] * {
             hooks: {
@@ -85,17 +103,21 @@ if git clone --depth 1 https://github.com/affaan-m/everything-claude-code.git "$
                 PostToolUse: (((.[0].hooks.PostToolUse // []) + (.[1].hooks.PostToolUse // [])) | unique_by(.description))
             }
         }
-    ' "$SETTINGS" "$ECC_DIR/hooks/hooks.json" 2>/dev/null) || MERGED=""
+    ' "$SETTINGS" "$ECC_DIR/hooks/hooks.json" 2>"$MERGE_ERR") || MERGED=""
     if [ -n "$MERGED" ]; then
         echo "$MERGED" > "$SETTINGS"
-        ok "AgentShield hooks merged"
+        ok "AgentShield hooks merged (restore with: cp $BACKUP $SETTINGS)"
     else
-        warn "Merge failed — check ~/.claude/settings.json manually"
+        warn "Merge failed — check ~/.claude/settings.json manually. jq stderr:"
+        cat "$MERGE_ERR" >&2
+        warn "Original settings preserved at $BACKUP"
     fi
+    rm -f "$MERGE_ERR"
 else
-    warn "Could not fetch ECC hooks — skipping"
+    warn "Could not fetch ECC hooks — skipping. git stderr:"
+    cat "$ECC_LOG" >&2
 fi
-rm -rf "$ECC_DIR"
+rm -rf "$ECC_DIR" "$ECC_LOG"
 
 # ---------------------------------------------------------------------------
 # 4. Copy ask-ranger config to TARGET (skip if TARGET == ASK_DIR)
@@ -112,7 +134,7 @@ if [ "$TARGET" != "$ASK_DIR" ]; then
     done
 
     # Skip if exists — preserve target's customizations
-    for p in Makefile githooks .claude .github .agent docs; do
+    for p in Makefile githooks scripts .claude .github .agent docs; do
         if [ -e "$TARGET/$p" ]; then
             skip "$p already exists"
         elif [ -e "$ASK_DIR/$p" ]; then
@@ -158,11 +180,15 @@ fi
 # 7. GitNexus index
 # ---------------------------------------------------------------------------
 step "Indexing target with GitNexus"
-if gitnexus analyze "$TARGET" 2>/dev/null; then
+GITNEXUS_LOG=$(mktemp)
+if gitnexus analyze "$TARGET" 2>"$GITNEXUS_LOG"; then
     ok "GitNexus index complete"
 else
     warn "gitnexus analyze failed — run manually: gitnexus analyze $TARGET"
+    warn "stderr:"
+    cat "$GITNEXUS_LOG" >&2
 fi
+rm -f "$GITNEXUS_LOG"
 
 # ---------------------------------------------------------------------------
 # 8. Final instructions
