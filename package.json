@@ -1,0 +1,35 @@
+{
+  "name": "ask-ranger",
+  "version": "0.2.0",
+  "private": true,
+  "description": "ASK (Agentic SDLC Kit) — spec-driven workflow scaffolding for solo developers. OpenSpec + GitNexus + Claude Code + Superpowers + AgentShield.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ongtungduong/ask-ranger"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "setup": "bash scripts/setup.sh",
+    "sync": "bash scripts/sync-platforms.sh",
+    "test": "bats tests/"
+  },
+  "peerDependencies": {
+    "@fission-ai/openspec": "^1.3.0",
+    "gitnexus": "^1.6.0",
+    "ecc-agentshield": "^1.4.0"
+  },
+  "peerDependenciesMeta": {
+    "@fission-ai/openspec": {
+      "optional": false
+    },
+    "gitnexus": {
+      "optional": false
+    },
+    "ecc-agentshield": {
+      "optional": true
+    }
+  }
+}

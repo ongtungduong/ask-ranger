@@ -24,7 +24,8 @@ See [GETTING_STARTED.md](GETTING_STARTED.md) for a step-by-step walkthrough.
 
 ## Setup
 
-Requires **Node.js ≥ 18**, **Git**, **jq**, and **gitleaks** (auto-installed on macOS/Linux; see [gitleaks releases](https://github.com/gitleaks/gitleaks/releases) for other platforms).
+**Required:** Node.js ≥ 18, Git.
+**Auto-installed on macOS/Linux** by `setup.sh`: jq, gitleaks. Native Windows is not supported — use WSL2.
 
 ```bash
 git clone <this-repo> ask-ranger
@@ -35,6 +36,11 @@ make -C ask-ranger setup TARGET=/path/to/your-repo
 # Or use ask-ranger itself as your working repo:
 cd ask-ranger && make setup
 ```
+
+The tested compatibility range for the installed CLIs lives in this repo's
+[`package.json`](package.json) under `peerDependencies` (OpenSpec, GitNexus,
+AgentShield). `setup.sh` pulls `@latest`, so expect minor drift between
+releases; check the CHANGELOG before `make update` if something breaks.
 
 One manual step inside your AI tool:
 
