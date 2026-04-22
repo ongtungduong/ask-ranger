@@ -1,97 +1,90 @@
-# Getting Started with ask-ranger
+# Getting started
 
-This guide walks you through your first feature using the 5-step workflow.
+A hands-on walkthrough of your first feature using the 5-step workflow. Assumes `make setup` and the Superpowers plugin install are already done (see [README.md](README.md)).
 
-## Prerequisites
-
-After running `make setup` and installing Superpowers, verify everything works:
+Before you start, verify all four tools report installed:
 
 ```bash
 make status
 ```
 
-All 4 tools should show as installed (GitNexus, OpenSpec, Superpowers, AgentShield).
-
 ---
 
-## Your First Feature — Step by Step
+## The 5 steps, one feature at a time
 
-### Step 1 — Spec
+### 1. Spec
 
-Open your AI tool in the target repo and run:
+In your AI tool (Claude Code, Antigravity, or Copilot chat):
 
 ```
 /opsx:propose <describe what you want to build>
 ```
 
-The AI creates three files:
-- `openspec/changes/<name>/proposal.md` — what and why
-- `openspec/changes/<name>/design.md` — how
-- `openspec/changes/<name>/tasks.md` — implementation tasks (2–5 min each)
+The AI creates three artifacts under `openspec/changes/<name>/`:
 
-Read and approve the spec. Ask the AI to revise anything unclear.
+| File          | Content          |
+|---------------|------------------|
+| `proposal.md` | what and why     |
+| `design.md`   | how              |
+| `tasks.md`    | atomic tasks (2–5 min each) |
+
+Read them. Push back on anything unclear. Then commit:
 
 ```bash
 git add openspec/changes/<name>/
 git commit -m "spec: <feature name>"
 ```
 
----
+### 2. Impact analysis
 
-### Step 2 — Impact Analysis
-
-The AI runs this automatically before coding. It uses GitNexus to find what will be affected:
+The AI runs GitNexus automatically before touching code:
 
 ```
 gitnexus_impact({target: "SymbolName", direction: "upstream"})
 ```
 
-The AI reports which modules are affected. You decide:
-- 3 or fewer modules → one PR
-- More than 3 → split into smaller PRs
+It reports the blast radius. Your rule of thumb:
 
----
+- **≤ 3 modules affected** → one PR
+- **> 3 modules** → split
 
-### Step 3 — Brainstorm + Plan
+### 3. Brainstorm + plan
 
 ```
 /superpowers:brainstorming
 ```
 
-The AI proposes 2–3 approaches with trade-offs. You choose one.
+The AI sketches 2–3 approaches with trade-offs. Pick one.
 
 ```
 /superpowers:writing-plans
 ```
 
-The AI creates a detailed implementation plan. Review it — every task must have a verification step before you approve.
+The AI writes a detailed plan. **Do not approve it until every task has a verification step.**
 
----
-
-### Step 4 — Execute
+### 4. Execute
 
 ```
 /superpowers:executing-plans
 ```
 
-The AI implements each task using TDD (tests first, then code), commits after each task, and reports when done. If a task fails 3 times, the AI stops and asks for direction.
+The AI implements each task using TDD (tests first, then code) and commits after each one. On three consecutive failures it stops and asks for direction.
 
----
-
-### Step 5 — Review + Ship
+### 5. Review + ship
 
 ```
 /superpowers:requesting-code-review
 ```
-AI reviews its own output against the methodology.
+
+The AI reviews its own output against the methodology. Then:
 
 ```bash
-make check-artifacts   # verify spec artifacts are complete
-make scan              # security scan
+make review            # 3-layer review (methodology · artifacts · re-index)
+make scan              # AgentShield security scan
 git push origin feature/<name>
 ```
 
-Create a PR, review it, merge. Then close the change:
+After merge:
 
 ```
 /opsx:archive
@@ -99,42 +92,34 @@ Create a PR, review it, merge. Then close the change:
 
 ---
 
-## Platform Notes
+## Daily command cheatsheet
 
-The `/opsx:*` and `/superpowers:*` commands work across all supported AI tools:
+| Command              | Use when                                             |
+|----------------------|------------------------------------------------------|
+| `make index`         | After every merge — keep the GitNexus graph fresh    |
+| `make check-artifacts` | Before shipping — OpenSpec artifacts complete       |
+| `make scan`          | Before every push                                    |
+| `make review`        | Full 3-layer review before PR                        |
+| `make update`        | Pull latest `CLAUDE.md` + `AGENTS.md` from ask-ranger |
+| `make status`        | Sanity-check all tools                               |
 
-| Command group | Claude Code | Antigravity | GitHub Copilot |
-|---|---|---|---|
-| `/opsx:propose` `/opsx:apply` `/opsx:archive` | Yes | Yes | Yes (via agent) |
-| `/superpowers:brainstorming` `/superpowers:writing-plans` `/superpowers:executing-plans` | Yes (plugin) | Yes | Yes (via agent) |
-| GitNexus MCP tools | Yes | Yes | Partial |
+## Platform notes
 
-For Claude Code: install Superpowers with `/plugin install superpowers@claude-plugins-official`.
+| Command group              | Claude Code | Antigravity | GitHub Copilot   |
+|---------------------------|-------------|-------------|------------------|
+| `/opsx:*`                  | Yes         | Yes         | Yes (via agent)  |
+| `/superpowers:*`           | Yes (plugin)| Yes         | Yes (via agent)  |
+| GitNexus MCP tools         | Yes         | Yes         | Partial          |
 
-For Antigravity: skills are in `.agent/skills/`, workflows in `.agent/workflows/` — loaded automatically.
+- **Claude Code**: `/plugin install superpowers@claude-plugins-official`
+- **Antigravity**: skills in `.agent/skills/`, workflows in `.agent/workflows/` (auto-loaded)
+- **Copilot**: agent instructions at `.github/copilot-instructions.md` + `.github/prompts/`
 
-For GitHub Copilot: agent instructions are in `.github/copilot-instructions.md` and `.github/prompts/`.
+## Anti-patterns
 
----
-
-## Daily Commands
-
-| Command | When to use |
-|---|---|
-| `make index` | After every merge |
-| `make check-artifacts` | Before shipping — confirm spec artifacts are complete |
-| `make scan` | Before every push |
-| `make review` | Full 3-layer review before PR |
-| `make update` | Pull latest CLAUDE.md + AGENTS.md from ask-ranger |
-| `make status` | Check all tools are working |
-
----
-
-## Anti-Patterns
-
-| Do not | Instead |
-|---|---|
-| Start coding without a spec | `/opsx:propose` first |
-| Skip brainstorm | `/superpowers:brainstorming` before planning |
-| Push without review | `make review` + `make scan` before every PR |
-| Forget to archive | `/opsx:archive` after every merge |
+| Don't                         | Do instead                              |
+|-------------------------------|-----------------------------------------|
+| Start coding without a spec   | `/opsx:propose` first                   |
+| Skip brainstorming            | `/superpowers:brainstorming` then plan  |
+| Push without review           | `make review` + `make scan`             |
+| Forget to archive             | `/opsx:archive` after every merge       |
