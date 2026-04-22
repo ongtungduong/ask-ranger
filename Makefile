@@ -2,7 +2,7 @@
 # Day-to-day operations via Make targets.
 # Run `make help` for available commands.
 
-.PHONY: help setup index scan scan-deep verify review archive status clean
+.PHONY: help setup update index scan scan-deep check-artifacts review archive status clean
 
 SHELL := /bin/bash
 
@@ -14,6 +14,12 @@ help: ## Show this help
 
 setup: ## Setup ASF. Current dir by default, or: make setup TARGET=/path/to/repo
 	@bash scripts/setup.sh "$(TARGET)"
+
+update: ## Pull latest CLAUDE.md + AGENTS.md from ASF (safe to re-run)
+	@bash scripts/setup.sh "$(TARGET)"
+	@echo ""
+	@echo "Note: Makefile, githooks, .claude, .github, .agent, docs are skipped if already"
+	@echo "      present. Delete them first to force a full update."
 
 # ── Knowledge Graph ────────────────────────────────────────────────────────────
 
@@ -30,16 +36,16 @@ scan: ## Run AgentShield security scan
 scan-deep: ## Run AgentShield deep scan (Opus + streaming)
 	npx ecc-agentshield scan --opus --stream
 
-# ── Review (3-layer) ──────────────────────────────────────────────────────────
+# ── Review ─────────────────────────────────────────────────────────────────────
 
-verify: ## Layer 2: Check implementation against OpenSpec specs
+check-artifacts: ## Check OpenSpec artifact completeness (proposal, design, tasks)
 	openspec validate --all
 
-review: ## Run 3-layer review (methodology + spec + re-index)
-	@echo "==> Layer 1: Methodology review"
-	@echo "    Run in Claude Code: /superpowers:code-review"
+review: ## Run 3-layer review (AI methodology + artifact check + re-index)
+	@echo "==> Layer 1: AI methodology review"
+	@echo "    Run in your AI tool: /superpowers:code-review"
 	@echo ""
-	@echo "==> Layer 2: Spec compliance"
+	@echo "==> Layer 2: Artifact completeness"
 	openspec validate --all
 	@echo ""
 	@echo "==> Layer 3: Re-index knowledge graph"
@@ -56,12 +62,28 @@ archive: ## Archive specs + re-index (post-merge)
 
 # ── Status ─────────────────────────────────────────────────────────────────────
 
-status: ## Show status of all tools
+status: ## Show status of all installed tools
 	@echo "==> GitNexus"
-	@gitnexus status 2>/dev/null || echo "    [not indexed]"
+	@gitnexus status 2>/dev/null || echo "    [not indexed — run: make index]"
 	@echo ""
 	@echo "==> OpenSpec"
 	@openspec list 2>/dev/null || echo "    [no active changes]"
+	@echo ""
+	@echo "==> Superpowers"
+	@if ls ~/.claude/plugins/cache/claude-plugins-official/superpowers/ &>/dev/null; then \
+		VER=$$(ls ~/.claude/plugins/cache/claude-plugins-official/superpowers/ | tail -1); \
+		echo "    installed (v$$VER)"; \
+	else \
+		echo "    [not installed — run in Claude Code: /plugin install superpowers@claude-plugins-official]"; \
+	fi
+	@echo ""
+	@echo "==> AgentShield hooks"
+	@if jq -e '.hooks.PreToolUse | length > 0' ~/.claude/settings.json &>/dev/null; then \
+		COUNT=$$(jq '.hooks.PreToolUse | length' ~/.claude/settings.json); \
+		echo "    $$COUNT pre-tool hooks active"; \
+	else \
+		echo "    [no hooks — run: make setup]"; \
+	fi
 
 # ── Maintenance ────────────────────────────────────────────────────────────────
 

@@ -1,7 +1,85 @@
 # ASF — Agentic SDLC Framework
 
-A spec-driven development framework. Write specs first, execute with AI, review
-in 3 layers. 5-tool stack, $20/month total.
+A spec-driven development framework for solo developers. Write specs first, execute with AI, review in 3 layers.
+
+**Stack:** OpenSpec · GitNexus (MCP) · Claude Code + Superpowers + AgentShield  
+**Cost:** $20/month (Claude Code subscription) — all other tools are free  
+**Platforms:** Claude Code (primary) | Antigravity | GitHub Copilot
+
+---
+
+## How It Works
+
+Every feature follows a 5-step cycle:
+
+```
+Spec → Impact Analysis → Brainstorm+Plan → Execute → Review+Ship
+```
+
+See [GETTING_STARTED.md](GETTING_STARTED.md) for a step-by-step walkthrough.
+
+---
+
+## Setup
+
+Requires **Node.js ≥ 18**, **Git**, and **jq**.
+
+```bash
+git clone <this-repo> agentic-sdlc-framework
+
+# Apply to an existing repo:
+make -C agentic-sdlc-framework setup TARGET=/path/to/your-repo
+
+# Or use ASF itself as your working repo:
+cd agentic-sdlc-framework && make setup
+```
+
+One manual step inside your AI tool:
+
+```
+/plugin install superpowers@claude-plugins-official
+```
+
+Restart your AI tool, then verify:
+
+```bash
+make status
+```
+
+### What gets installed
+
+| File / Directory | Behavior |
+|---|---|
+| `CLAUDE.md`, `AGENTS.md` | Always overwritten (AI system prompts) |
+| `Makefile`, `githooks/`, `.claude/`, `.github/`, `.agent/`, `docs/` | Copied only if not present |
+| `.gitignore` | ASF entries appended once |
+| `core.hooksPath` | Set to `githooks/` |
+| OpenSpec | Initialized in target repo |
+| GitNexus | Codebase indexed |
+| AgentShield | Hooks merged into `~/.claude/settings.json` |
+
+### Updating ASF
+
+When ASF releases updates, pull the latest system prompts:
+
+```bash
+make update
+```
+
+This overwrites `CLAUDE.md` and `AGENTS.md`. Other files (Makefile, hooks, etc.) are skipped — delete them first if you want a full update.
+
+---
+
+## Daily Operations
+
+| Command | What It Does |
+|---|---|
+| `make update` | Pull latest CLAUDE.md + AGENTS.md from ASF |
+| `make index` | Re-index codebase (GitNexus) — run after every merge |
+| `make check-artifacts` | Check OpenSpec artifact completeness |
+| `make review` | Run full 3-layer review |
+| `make scan` | Run AgentShield security scan |
+| `make status` | Show status of all installed tools |
 
 ---
 
@@ -17,163 +95,21 @@ in 3 layers. 5-tool stack, $20/month total.
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-**Supported platforms:** Claude Code (primary) | GitHub Copilot | Antigravity
-
-## Setup
-
-Requires **Node.js ≥ 18**, **Git**, **jq**, and a **Claude Code subscription** ($20/mo).
-
-One script handles both new repos and existing repos with code. It is idempotent — safe to re-run.
-
-```bash
-git clone <this-repo> agentic-sdlc-framework
-
-# Option A — apply to an existing repo
-make -C agentic-sdlc-framework setup TARGET=/path/to/your-repo
-
-# Option B — use ASF itself as your working repo
-cd agentic-sdlc-framework && make setup
-```
-
-What the script does in the target repo:
-
-| File / Directory | Behavior |
-|---|---|
-| `CLAUDE.md`, `AGENTS.md` | Always overwritten (ASF system prompts) |
-| `Makefile`, `githooks/`, `.claude/`, `.github/`, `.agent/`, `docs/` | Copied only if not present |
-| `.gitignore` | ASF entries appended once (marker-based) |
-| `core.hooksPath` | Set to `githooks/` |
-| OpenSpec | `openspec init` in target |
-| GitNexus | `gitnexus analyze` to build code index |
-| AgentShield | Hooks merged into `~/.claude/settings.json` |
-
-One manual step inside Claude Code:
-
-```
-/plugin install superpowers@claude-plugins-official
-```
-
-Restart Claude Code after installing Superpowers. Then run `make status` to verify.
-
 ## Directory Layout
 
 ```
 .
-├── .agent/                  # Antigravity config
+├── .agent/                  # Antigravity skills and workflows
 ├── .claude/
-│   └── settings.json        # AgentShield hooks: block secrets, protect config
-├── .github/                 # GitHub Copilot config
+│   └── settings.json        # AgentShield hooks
+├── .github/                 # GitHub Copilot instructions and prompts
 ├── docs/
-│   └── superpowers/         # Design specs and implementation plans
+│   └── superpowers/         # Implementation plans and specs
 ├── githooks/                # Git hooks (pre-push security scan)
-├── openspec/                # OpenSpec workspace (proposals, tasks, verification)
+├── openspec/                # OpenSpec workspace (changes, specs)
 ├── scripts/
-│   └── setup.sh             # Unified setup (called by make setup)
-├── CLAUDE.md                # Claude Code system prompt — workflow rules
+│   └── setup.sh             # Unified setup script
+├── CLAUDE.md                # AI system prompt — workflow rules
+├── GETTING_STARTED.md       # Step-by-step first-feature guide
 └── Makefile                 # All day-to-day operations
 ```
-
-## Daily Operations
-
-| Command | What It Does |
-|---|---|
-| `make setup [TARGET=...]` | Install/update ASF in current dir or target repo |
-| `make index` | Re-index codebase (GitNexus) — run after every merge |
-| `make verify` | Check implementation against OpenSpec specs |
-| `make review` | Run 3-layer review |
-| `make scan` | Run AgentShield security scan |
-| `make status` | Show status of installed tools |
-
-## Tools
-
-| Tool | What It Does | Cost |
-|---|---|---|
-| **Claude Code** | AI coding agent — primary interface | $20/mo |
-| **OpenSpec** | Spec-driven development: proposals, specs, tasks, verification | Free |
-| **GitNexus** | Code knowledge graph via MCP — impact analysis, dependency queries | Free |
-| **Superpowers** | Methodology engine: brainstorm, plan, TDD execution, code review | Free |
-| **AgentShield** | Security scanner + git hooks (block secrets, protect config) | Free |
-
-## Workflow
-
-Every feature follows a **5-step cycle**: spec → impact analysis → brainstorm+plan
-→ execute → review+ship.
-
-See `CLAUDE.md` for the full workflow rules and quick-reference command table.
-
-## Example: Building a New Feature
-
-**Scenario:** Add a feature to "export reports to PDF".
-
----
-
-**Step 1 — Spec** · *You do this*
-
-```
-/opsx:propose export reports to PDF
-```
-
-> AI creates a spec file with task lists, edge cases, and acceptance criteria. You review and approve.
-
----
-
-**Step 2 — Impact Analysis** · *AI runs this automatically*
-
-AI runs GitNexus to find affected modules:
-
-```
-gitnexus_impact({target: "ReportService", direction: "upstream"})
-```
-
-> AI reports: "3 modules depend on ReportService. Recommend splitting into 2 PRs."
-> You decide: split the PR or keep it as one.
-
----
-
-**Step 3 — Brainstorm + Plan** · *AI guides, you approve*
-
-```
-/superpowers:brainstorm
-```
-
-> AI proposes 3 approaches (wkhtmltopdf / Puppeteer / server-side LaTeX), analyzes trade-offs, and recommends Puppeteer.
-> You choose an approach → AI creates an implementation plan with 2-5 minute tasks.
-> You review the plan and approve.
-
----
-
-**Step 4 — Execute** · *AI does it, you monitor*
-
-```
-/superpowers:execute-plan
-```
-
-> AI codes each task using TDD (write tests first, implement after), and commits after each task.
-> If a task fails 3 times, AI stops and reports back so you can decide the direction.
-
----
-
-**Step 5 — Review + Ship** · *AI does it, you approve merge*
-
-```
-/superpowers:code-review   # AI review methodology
-make verify                # OpenSpec verifies spec compliance
-make scan                  # AgentShield runs security scans
-git push origin feature/export-pdf
-```
-
-> You review the PR and merge.
-
----
-
-| Step | Human | AI |
-|---|---|---|
-| Spec | Describe the feature, approve spec | Create spec and edge cases |
-| Impact | Decide whether to split PRs | Run blast radius analysis |
-| Brainstorm | Answer questions, choose approach, approve plan | Propose options, create plan |
-| Execute | Monitor and unblock if AI gets stuck | Code, test, and commit each task |
-| Review | Review PR and approve merge | Run 3-layer review and security scan |
-
----
-
-**Core principles:** Spec before code. Context is king. 3-layer review before every PR.
