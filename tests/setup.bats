@@ -112,15 +112,30 @@ teardown() {
     [ "$output" -gt 0 ]
 }
 
-@test "setup.sh merges vendored AgentShield hooks (not network clone)" {
+@test "setup.sh skips ECC hooks merge when ECC plugin is not installed" {
     bash "$ROOT/scripts/setup.sh" "$TARGET"
 
-    # PreToolUse should have entries sourced from the vendored file.
+    # Without ECC plugin, hooks should NOT be merged (prevents hook errors).
+    COUNT=$(jq '.hooks.PreToolUse // [] | length' "$FAKE_HOME/.claude/settings.json")
+    [ "$COUNT" -eq 0 ]
+}
+
+@test "setup.sh merges ECC hooks when ECC plugin is installed" {
+    # Simulate ECC plugin by creating the bootstrap file it looks for.
+    mkdir -p "$FAKE_HOME/.claude/scripts/lib"
+    echo "// stub" > "$FAKE_HOME/.claude/scripts/lib/utils.js"
+
+    bash "$ROOT/scripts/setup.sh" "$TARGET"
+
     COUNT=$(jq '.hooks.PreToolUse | length' "$FAKE_HOME/.claude/settings.json")
     [ "$COUNT" -gt 0 ]
 }
 
 @test "setup.sh is idempotent — second run does not corrupt settings.json" {
+    # Simulate ECC plugin so hooks are merged (tests idempotency of merge).
+    mkdir -p "$FAKE_HOME/.claude/scripts/lib"
+    echo "// stub" > "$FAKE_HOME/.claude/scripts/lib/utils.js"
+
     bash "$ROOT/scripts/setup.sh" "$TARGET"
     FIRST=$(jq '.hooks.PreToolUse | length' "$FAKE_HOME/.claude/settings.json")
 

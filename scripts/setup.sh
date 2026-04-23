@@ -25,19 +25,28 @@ CREATED_PATHS=()  # Track paths created during template copy for rollback.
 on_err() {
     local ec=$?
     warn "setup failed during: $STEP_REACHED (exit $ec)"
-    if [ -n "$SETTINGS_BACKUP" ] && [ -f "$SETTINGS_BACKUP" ]; then
-        warn "Restoring ~/.claude/settings.json from backup: $SETTINGS_BACKUP"
-        cp "$SETTINGS_BACKUP" "$HOME/.claude/settings.json" || true
-    fi
-    if [ ${#CREATED_PATHS[@]} -gt 0 ]; then
-        warn "Rolling back ${#CREATED_PATHS[@]} created path(s)..."
-        for p in "${CREATED_PATHS[@]}"; do
-            if [ -e "$p" ]; then
-                rm -rf "$p"
-                warn "  removed $p"
+    # Only rollback settings and template files if we failed during those steps.
+    # Later steps (hooks-path, openspec, gitnexus) should not undo earlier
+    # successful work — the user can rerun setup to retry the failing step.
+    case "$STEP_REACHED" in
+        merge-agentshield-hooks)
+            if [ -n "$SETTINGS_BACKUP" ] && [ -f "$SETTINGS_BACKUP" ]; then
+                warn "Restoring ~/.claude/settings.json from backup: $SETTINGS_BACKUP"
+                cp "$SETTINGS_BACKUP" "$HOME/.claude/settings.json" || true
             fi
-        done
-    fi
+            ;;
+        copy-template)
+            if [ ${#CREATED_PATHS[@]} -gt 0 ]; then
+                warn "Rolling back ${#CREATED_PATHS[@]} created path(s)..."
+                for p in "${CREATED_PATHS[@]}"; do
+                    if [ -e "$p" ]; then
+                        rm -rf "$p"
+                        warn "  removed $p"
+                    fi
+                done
+            fi
+            ;;
+    esac
     warn "Rerun 'bash scripts/setup.sh \"\$TARGET\"' after fixing the issue above."
     exit "$ec"
 }
@@ -144,21 +153,66 @@ cp "$SETTINGS" "$BACKUP"
 SETTINGS_BACKUP="$BACKUP"
 info "Backed up existing settings to $BACKUP"
 
-# Vendored at a pinned SHA — see template/vendor/ecc-hooks/README.md for refresh process.
+# Vendored ECC hooks require the ECC plugin infrastructure (scripts/lib/utils.js)
+# to be present. Only merge if the plugin is actually installed — otherwise every
+# Claude Code tool call will produce hook errors.
 VENDOR_HOOKS="$TEMPLATE_DIR/vendor/ecc-hooks/hooks.json"
-if [ -f "$VENDOR_HOOKS" ]; then
-    if [ -f "$ASK_DIR/vendor/ecc-hooks/SOURCE_SHA" ]; then
-        info "Using vendored ECC hooks at SHA $(cat "$ASK_DIR/vendor/ecc-hooks/SOURCE_SHA")"
+ECC_BOOTSTRAP="scripts/lib/utils.js"
+ECC_ROOT=""
+
+# Search the same paths the hooks' own bootstrap code searches.
+for candidate in \
+    "${CLAUDE_PLUGIN_ROOT:-}" \
+    "$HOME/.claude" \
+    "$HOME/.claude/plugins/ecc" \
+    "$HOME/.claude/plugins/ecc@ecc" \
+    "$HOME/.claude/plugins/marketplace/ecc" \
+    "$HOME/.claude/plugins/everything-claude-code" \
+    "$HOME/.claude/plugins/everything-claude-code@everything-claude-code" \
+    "$HOME/.claude/plugins/marketplace/everything-claude-code"; do
+    if [ -n "$candidate" ] && [ -f "$candidate/$ECC_BOOTSTRAP" ]; then
+        ECC_ROOT="$candidate"
+        break
     fi
+done
+# Also check the plugin cache directories.
+if [ -z "$ECC_ROOT" ]; then
+    for slug in ecc everything-claude-code; do
+        cache_base="$HOME/.claude/plugins/cache/$slug"
+        if [ -d "$cache_base" ]; then
+            found=$(find "$cache_base" -maxdepth 3 -name "utils.js" -path "*/scripts/lib/utils.js" 2>/dev/null | head -1)
+            if [ -n "$found" ]; then
+                ECC_ROOT="$(dirname "$(dirname "$(dirname "$found")")")"
+                break
+            fi
+        fi
+    done
+fi
+
+if [ -z "$ECC_ROOT" ]; then
+    skip "ECC plugin not installed — skipping ECC hooks merge"
+    info "To install: claude plugin install ecc (or everything-claude-code)"
+    info "Then rerun setup to merge hooks."
+elif [ ! -f "$VENDOR_HOOKS" ]; then
+    warn "Vendored hooks not found at $VENDOR_HOOKS — skipping AgentShield setup"
+else
+    if [ -f "$TEMPLATE_DIR/vendor/ecc-hooks/SOURCE_SHA" ]; then
+        info "Using vendored ECC hooks at SHA $(cat "$TEMPLATE_DIR/vendor/ecc-hooks/SOURCE_SHA")"
+    fi
+    info "ECC plugin found at $ECC_ROOT"
     MERGE_ERR=$(mktemp)
+    # Merge ALL lifecycle events from the vendored hooks.
+    # For each event key present in the vendored file, concatenate with existing hooks
+    # and deduplicate by description (idempotent on re-runs).
     MERGED=$(jq -s '
-        .[0] * {
+        .[0] as $existing | .[1] as $vendor |
+        ($vendor.hooks // {}) | keys as $vendor_keys |
+        $existing * {
             hooks: (
-                (.[0].hooks // {}) *
-                {
-                    PreToolUse:  (((.[0].hooks.PreToolUse // []) + (.[1].hooks.PreToolUse // [])) | unique_by(.description)),
-                    PostToolUse: (((.[0].hooks.PostToolUse // []) + (.[1].hooks.PostToolUse // [])) | unique_by(.description))
-                }
+                reduce $vendor_keys[] as $key (
+                    ($existing.hooks // {});
+                    . * { ($key): (((.[$key] // []) + ($vendor.hooks[$key] // [])) | unique_by(.description)) }
+                )
             )
         }
     ' "$SETTINGS" "$VENDOR_HOOKS" 2>"$MERGE_ERR") || MERGED=""
@@ -171,8 +225,6 @@ if [ -f "$VENDOR_HOOKS" ]; then
         warn "Original settings preserved at $BACKUP"
     fi
     rm -f "$MERGE_ERR"
-else
-    warn "Vendored hooks not found at $VENDOR_HOOKS — skipping AgentShield setup"
 fi
 
 # ---------------------------------------------------------------------------
@@ -251,7 +303,11 @@ step "Initializing OpenSpec in target"
 if [ -d "$TARGET/openspec" ]; then
     skip "OpenSpec already initialized"
 else
-    (cd "$TARGET" && openspec init) && ok "OpenSpec initialized"
+    if (cd "$TARGET" && openspec init); then
+        ok "OpenSpec initialized"
+    else
+        warn "openspec init failed — run manually: cd \"$TARGET\" && openspec init"
+    fi
 fi
 
 # ---------------------------------------------------------------------------

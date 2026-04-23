@@ -4,6 +4,12 @@ set -euo pipefail
 echo "==> Pre-push: Running verification checks..."
 
 make check-artifacts || { echo "BLOCKED: 'make check-artifacts' failed."; exit 1; }
-make scan   || { echo "BLOCKED: 'make scan' failed."; exit 1; }
+
+if command -v ecc-agentshield >/dev/null 2>&1 || npm list -g ecc-agentshield >/dev/null 2>&1; then
+    make scan || { echo "BLOCKED: 'make scan' failed."; exit 1; }
+else
+    echo "==> SKIP: ecc-agentshield not installed — skipping security scan."
+    echo "   Install with: npm install -g ecc-agentshield"
+fi
 
 echo "==> Pre-push checks passed."

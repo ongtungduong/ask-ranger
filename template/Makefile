@@ -2,7 +2,7 @@
 # Day-to-day operations via Make targets.
 # Run `make help` for available commands.
 
-.PHONY: help setup sync test update update-prompts index scan scan-deep check-artifacts review review-checklist archive status clean
+.PHONY: help sync test index scan scan-deep check-artifacts review review-checklist archive status clean
 
 SHELL := /bin/bash
 
@@ -12,25 +12,8 @@ help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
-setup: sync ## Setup ask-ranger. TARGET=/path FORCE=1 to overwrite existing
-	@bash scripts/setup.sh $(if $(filter 1,$(FORCE)),--force) "$(TARGET)"
-
 sync: ## Regenerate platform-specific workflow files from canonical workflows/
 	@bash scripts/sync-platforms.sh
-
-test: ## Run bats test suite (requires bats + jq)
-	@command -v bats >/dev/null || { echo "bats not found. macOS: brew install bats-core. Linux: sudo apt install bats"; exit 1; }
-	@command -v jq   >/dev/null || { echo "jq not found.   macOS: brew install jq.         Linux: sudo apt install jq"; exit 1; }
-	bats tests/
-
-update-prompts: ## Pull latest CLAUDE.md + AGENTS.md only (Makefile/hooks/skills NOT updated)
-	@bash scripts/setup.sh "$(TARGET)"
-	@echo ""
-	@echo "Note: only CLAUDE.md + AGENTS.md are overwritten. Makefile, githooks, scripts,"
-	@echo "      .claude, .github, .agent, docs are skipped if already present. Delete them"
-	@echo "      first to force a full reinstall via 'make setup'."
-
-update: update-prompts ## Alias for update-prompts (kept for backward compatibility)
 
 # ── Knowledge Graph ────────────────────────────────────────────────────────────
 
