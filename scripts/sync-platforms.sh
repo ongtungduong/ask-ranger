@@ -81,6 +81,12 @@ strip_frontmatter() {
             if (in_fm == 1)  { in_fm = 0; past_fm = 1; next }
         }
         past_fm == 1 { print }
+        END {
+            if (past_fm == 0) {
+                print "[ERROR] No frontmatter in " FILENAME " — body is empty, aborting" > "/dev/stderr"
+                exit 1
+            }
+        }
     ' "$1"
 }
 

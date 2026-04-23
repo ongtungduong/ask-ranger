@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # setup.sh — Install ask-ranger into a target git repository (new or with existing code).
-# Usage: bash scripts/setup.sh [TARGET_DIR]
-#   TARGET_DIR: optional path to target repo. Defaults to current directory.
+# Usage: bash scripts/setup.sh [--force] [TARGET_DIR]
+#   --force:     overwrite existing files/directories (use to update a previous install).
+#   TARGET_DIR:  optional path to target repo. Defaults to current directory.
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
@@ -20,12 +21,22 @@ step()  { echo -e "\n${CYAN}==> $*${NC}"; }
 # ---------------------------------------------------------------------------
 SETTINGS_BACKUP=""
 STEP_REACHED="init"
+CREATED_PATHS=()  # Track paths created during template copy for rollback.
 on_err() {
     local ec=$?
     warn "setup failed during: $STEP_REACHED (exit $ec)"
     if [ -n "$SETTINGS_BACKUP" ] && [ -f "$SETTINGS_BACKUP" ]; then
         warn "Restoring ~/.claude/settings.json from backup: $SETTINGS_BACKUP"
         cp "$SETTINGS_BACKUP" "$HOME/.claude/settings.json" || true
+    fi
+    if [ ${#CREATED_PATHS[@]} -gt 0 ]; then
+        warn "Rolling back ${#CREATED_PATHS[@]} created path(s)..."
+        for p in "${CREATED_PATHS[@]}"; do
+            if [ -e "$p" ]; then
+                rm -rf "$p"
+                warn "  removed $p"
+            fi
+        done
     fi
     warn "Rerun 'bash scripts/setup.sh \"\$TARGET\"' after fixing the issue above."
     exit "$ec"
@@ -35,6 +46,14 @@ trap on_err ERR
 # ---------------------------------------------------------------------------
 # Args
 # ---------------------------------------------------------------------------
+FORCE=false
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --force) FORCE=true; shift ;;
+        -*)      fail "Unknown option: $1" ;;
+        *)       break ;;
+    esac
+done
 TARGET="${1:-$PWD}"
 if ! git -C "$TARGET" rev-parse --git-dir &>/dev/null 2>&1; then
     fail "Not a git repository: $TARGET — run 'git init' first"
@@ -134,10 +153,13 @@ if [ -f "$VENDOR_HOOKS" ]; then
     MERGE_ERR=$(mktemp)
     MERGED=$(jq -s '
         .[0] * {
-            hooks: {
-                PreToolUse:  (((.[0].hooks.PreToolUse // []) + (.[1].hooks.PreToolUse // [])) | unique_by(.description)),
-                PostToolUse: (((.[0].hooks.PostToolUse // []) + (.[1].hooks.PostToolUse // [])) | unique_by(.description))
-            }
+            hooks: (
+                (.[0].hooks // {}) *
+                {
+                    PreToolUse:  (((.[0].hooks.PreToolUse // []) + (.[1].hooks.PreToolUse // [])) | unique_by(.description)),
+                    PostToolUse: (((.[0].hooks.PostToolUse // []) + (.[1].hooks.PostToolUse // [])) | unique_by(.description))
+                }
+            )
         }
     ' "$SETTINGS" "$VENDOR_HOOKS" 2>"$MERGE_ERR") || MERGED=""
     if [ -n "$MERGED" ]; then
@@ -164,25 +186,29 @@ if [ "$TARGET" != "$ASK_DIR" ]; then
     # {{REPO_NAME}} → basename of target repo (used in gitnexus:// URIs).
     for f in CLAUDE.md AGENTS.md; do
         if [ -f "$TEMPLATE_DIR/$f" ]; then
+            [ ! -f "$TARGET/$f" ] && CREATED_PATHS+=("$TARGET/$f")
             sed "s|{{REPO_NAME}}|$REPO_NAME|g" "$TEMPLATE_DIR/$f" > "$TARGET/$f"
             ok "$f updated (REPO_NAME=$REPO_NAME)"
         fi
     done
 
     # 4b. Copy directories that exist in template/ — skip if target already has them.
+    #     --force overwrites existing paths.
     for p in Makefile githooks workflows vendor .claude .github .agent docs; do
-        if [ -e "$TARGET/$p" ]; then
-            skip "$p already exists"
+        if [ -e "$TARGET/$p" ] && [ "$FORCE" = false ]; then
+            skip "$p already exists (use --force to overwrite)"
         elif [ -e "$TEMPLATE_DIR/$p" ]; then
+            [ ! -e "$TARGET/$p" ] && CREATED_PATHS+=("$TARGET/$p")
             rsync -a "$TEMPLATE_DIR/$p" "$TARGET/"
             ok "$p copied"
         fi
     done
 
     # 4c. Copy scripts/ (user-facing tools only — exclude kit-only setup.sh).
-    if [ -e "$TARGET/scripts" ]; then
-        skip "scripts/ already exists"
+    if [ -e "$TARGET/scripts" ] && [ "$FORCE" = false ]; then
+        skip "scripts/ already exists (use --force to overwrite)"
     else
+        [ ! -e "$TARGET/scripts" ] && CREATED_PATHS+=("$TARGET/scripts")
         rsync -a --exclude 'setup.sh' "$ASK_DIR/scripts/" "$TARGET/scripts/"
         ok "scripts/ copied (setup.sh excluded — kit-only)"
     fi

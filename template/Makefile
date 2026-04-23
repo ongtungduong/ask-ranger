@@ -12,8 +12,8 @@ help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
-setup: sync ## Setup ask-ranger. Current dir by default, or: make setup TARGET=/path/to/repo
-	@bash scripts/setup.sh "$(TARGET)"
+setup: sync ## Setup ask-ranger. TARGET=/path FORCE=1 to overwrite existing
+	@bash scripts/setup.sh $(if $(filter 1,$(FORCE)),--force) "$(TARGET)"
 
 sync: ## Regenerate platform-specific workflow files from canonical workflows/
 	@bash scripts/sync-platforms.sh

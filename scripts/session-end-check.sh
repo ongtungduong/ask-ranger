@@ -20,9 +20,9 @@ else
 fi
 
 # 2. Debug artifacts in staged files (console.log, debugger).
-LOGS=$(git diff --cached --diff-filter=ACM --name-only 2>/dev/null \
-  | grep -vE '\.(md|txt|lock|json)$' \
-  | xargs -I{} grep -lE 'console[.]log|^[[:space:]]*debugger[[:space:]]*;?$' "{}" 2>/dev/null) || true
+LOGS=$(git diff --cached --diff-filter=ACM --name-only -z 2>/dev/null \
+  | grep -zvE '\.(md|txt|lock|json)$' \
+  | xargs -0 -I{} grep -lE 'console[.]log|^[[:space:]]*debugger[[:space:]]*;?$' "{}" 2>/dev/null) || true
 
 if [ -n "$LOGS" ]; then
     ISSUES="${ISSUES}WARNING: Debug artifacts in staged files: ${LOGS} "
